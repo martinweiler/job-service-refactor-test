@@ -49,7 +49,7 @@
   <modules>
     <!--<module>job-service-refactor-quarkus-distributed</module>-->
     <module>job-service-refactor-quarkus-embedded</module>
-    <module>job-service-refactor-springboot</module>
+    <!--<module>job-service-refactor-springboot</module>-->
     <module>performance-test</module>
   </modules>
 </project>

@@ -30,6 +30,7 @@ import static us.abstracta.jmeter.javadsl.JmeterDsl.jtlWriter;
 import static us.abstracta.jmeter.javadsl.JmeterDsl.testPlan;
 import static us.abstracta.jmeter.javadsl.JmeterDsl.threadGroup;
 import static us.abstracta.jmeter.javadsl.JmeterDsl.vars;
+import static us.abstracta.jmeter.javadsl.dashboard.DashboardVisualizer.dashboardVisualizer;
 import static us.abstracta.jmeter.javadsl.wrapper.WrapperJmeterDsl.testElement;
 
 import us.abstracta.jmeter.javadsl.core.TestPlanStats;
@@ -164,13 +165,16 @@ public class PerformanceIT {
                                                                 .body("{\r\n"
                                                                         + "  \"offer\" : ${offerTask},\r\n"
                                                                         + "  \"approve\": true\r\n"
-                                                                        + "}"),
-                                                httpSampler("GraphQL HTTP Request", "http://${host}:${port}/data-audit/q/")
-                                                        .method(HTTPConstants.POST)
-                                                        .body("{\r\n"
-                                                                + "\t\"query\" : \"{ GetAllProcessInstancesState { eventId, eventDate, processType, processId, processVersion, parentProcessInstanceId, rootProcessId, rootProcessInstanceId, processInstanceId, businessKey, eventType, outcome, state, slaDueDate, roles } }\"\r\n"
-                                                                + "}\r\n"
-                                                                + "")),
+                                                                        + "}")
+                                                //                         ,
+                                                // httpSampler("GraphQL HTTP Request", "http://${host}:${port}/data-audit/q/")
+                                                //         .method(HTTPConstants.POST)
+                                                //         .body("{\r\n"
+                                                //                 + "\t\"query\" : \"{ GetAllProcessInstancesState { eventId, eventDate, processType, processId, processVersion, parentProcessInstanceId, rootProcessId, rootProcessInstanceId, processInstanceId, businessKey, eventType, outcome, state, slaDueDate, roles } }\"\r\n"
+                                                //                 + "}\r\n"
+                                                //                 + "")
+                                                                ),
+                                dashboardVisualizer(),
                                 htmlReporter("target/reports").timeGraphsGranularity(Duration.ofMinutes(1)),
                                 jtlWriter("target", "outcome.csv"))
                         .run();
