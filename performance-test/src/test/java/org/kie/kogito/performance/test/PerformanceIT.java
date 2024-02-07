@@ -165,7 +165,7 @@ public class PerformanceIT {
                                                                         + "  \"offer\" : ${offerTask},\r\n"
                                                                         + "  \"approve\": true\r\n"
                                                                         + "}"),
-                                                httpSampler("GraphQL HTTP Request", "http://${host}:${port}/data-audit/")
+                                                httpSampler("GraphQL HTTP Request", "http://${host}:${port}/data-audit/q/")
                                                         .method(HTTPConstants.POST)
                                                         .body("{\r\n"
                                                                 + "\t\"query\" : \"{ GetAllProcessInstancesState { eventId, eventDate, processType, processId, processVersion, parentProcessInstanceId, rootProcessId, rootProcessInstanceId, processInstanceId, businessKey, eventType, outcome, state, slaDueDate, roles } }\"\r\n"
