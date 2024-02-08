@@ -104,11 +104,11 @@
     </dependency>
     <dependency>
       <groupId>org.kie.kogito</groupId>
-      <artifactId>kogito-addons-quarkus-persistence-jdbc</artifactId>
+      <artifactId>kogito-addons-quarkus-persistence-mongodb</artifactId>
     </dependency>
     <dependency>
       <groupId>org.kie.kogito</groupId>
-      <artifactId>kogito-addons-quarkus-data-index-persistence-postgresql</artifactId>
+      <artifactId>kogito-addons-quarkus-data-index-persistence-mongodb</artifactId>
     </dependency>
 
     <dependency>
@@ -118,7 +118,7 @@
     </dependency>
     <dependency>
       <groupId>org.kie.kogito</groupId>
-      <artifactId>jobs-service-postgresql</artifactId>
+      <artifactId>jobs-service-mongodb</artifactId>
       <version>999-SNAPSHOT</version>
     </dependency>
 
