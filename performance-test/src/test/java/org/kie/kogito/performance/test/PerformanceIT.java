@@ -8,16 +8,16 @@ import org.apache.jmeter.config.RandomVariableConfig;
 import org.apache.jmeter.protocol.http.util.HTTPConstants;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
+
+import com.helger.commons.io.resource.ClassPathResource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static us.abstracta.jmeter.javadsl.JmeterDsl.htmlReporter;
@@ -43,8 +43,8 @@ public class PerformanceIT {
     private static final String DB_NAME = "kogito";
     private static final String DB_PASS = "kpass";
 
-    private static PostgreSQLContainer<?> postgresqlContainer;
-    private static GenericContainer<?> kogioAppContainer;
+    private static GenericContainer<?> mongoDBContainer;
+    private static GenericContainer<?> kogitoAppContainer;
     private static Network network;
 
     @SuppressWarnings({ "resource", "deprecation" })
@@ -52,36 +52,37 @@ public class PerformanceIT {
     public static void init() {
         network = Network.newNetwork();
 
-        postgresqlContainer = new PostgreSQLContainer<>(DockerImageName.parse("postgres:16.1"))
-                .withNetwork(network)
-                .withNetworkAliases("database")
-                .withLogConsumer(new Slf4jLogConsumer(LOGGER))
-                .withDatabaseName(DB_NAME)
-                .withUsername(DB_USER)
-                .withPassword(DB_PASS);
-        postgresqlContainer.start();
+        mongoDBContainer = new GenericContainer<>(DockerImageName.parse("mongo:latest"))
+                        .withNetwork(network)
+                        .withNetworkAliases("database")
+                        .withEnv("MONGO_INITDB_ROOT_USERNAME", DB_USER)
+                        .withEnv("MONGO_INITDB_ROOT_PASSWORD", DB_PASS)
+                        .withEnv("MONGO_INITDB_DATABASE", DB_NAME)
+                        .withCopyFileToContainer(MountableFile.forHostPath(
+                                        new ClassPathResource("src/test/resources/mongo-init.js").getPath()),
+                                        "/docker-entrypoint-initdb.d/mongo-init.js")
+                        .withExposedPorts(27017);
+        mongoDBContainer.start();
 
-        String reactJdbc = "postgresql://database:5432/" + DB_NAME;
-        String jdbc = "jdbc:postgresql://database:5432/" + DB_NAME;
-
-        kogioAppContainer = new GenericContainer<>(System.getProperty("image.kogito.app"))
-                .withNetwork(network)
-                .withNetworkAliases("kogitoApp")
-                .dependsOn(postgresqlContainer)
-                .withEnv("QUARKUS_DATASOURCE_JDBC_URL", jdbc)
-                .withEnv("QUARKUS_DATASOURCE_REACTIVE_URL", reactJdbc)
-                .withEnv("QUARKUS_DATASOURCE_USERNAME", DB_USER)
-                .withEnv("QUARKUS_DATASOURCE_PASSWORD", DB_PASS)
-                .waitingFor(Wait.forLogMessage(".*job-service-refactor-quarkus-embedded.*", 1))
-                .withExposedPorts(8080);
-        kogioAppContainer.start();
+        kogitoAppContainer = new GenericContainer<>(System.getProperty("image.kogito.app"))
+                        .withNetwork(network)
+                        .withNetworkAliases("kogitoApp")
+                        .dependsOn(mongoDBContainer)
+                        .withEnv("QUARKUS_MONGODB_DATABASE", DB_NAME)
+                        .withEnv("QUARKUS_MONGODB_CONNECTION_STRING", "mongodb://database:27017/" + DB_NAME)
+                        .withEnv("QUARKUS_MONGODB_CREDENTIALS_USERNAME", DB_USER)
+                        .withEnv("QUARKUS_MONGODB_CREDENTIALS_PASSWORD", DB_PASS)
+                        .withEnv("QUARKUS_MONGODB_CONNECT_TIMEOUT", "5000")
+                        .waitingFor(Wait.forLogMessage(".*job-service-refactor-quarkus-embedded.*", 1))
+                        .withExposedPorts(8080);
+        kogitoAppContainer.start();
 
     }
 
     @AfterAll
     public static void stop() {
-        kogioAppContainer.stop();
-        postgresqlContainer.stop();
+        mongoDBContainer.stop();
+        kogitoAppContainer.stop();
         network.close();
 
     }
@@ -89,7 +90,7 @@ public class PerformanceIT {
     @Test
     public void testHiringProcess() throws IOException {
         TestPlanStats stats = testPlan(
-                vars().set("host", "localhost").set("port", String.valueOf(kogioAppContainer.getFirstMappedPort())).set("user", "jdoe"))
+                vars().set("host", "localhost").set("port", String.valueOf(kogitoAppContainer.getFirstMappedPort())).set("user", "jdoe"))
                         .tearDownOnlyAfterMainThreadsDone()
                         .children(
                                 httpCache()
